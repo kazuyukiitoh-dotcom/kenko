@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>体重・血圧ノート</title>
+<meta name="description" content="体重と血圧を記録・グラフ化するアプリ">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#2a78d6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="健康ノート">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="app-header">
+  <h1>体重・血圧ノート</h1>
+</header>
+
+<main id="main">
+
+  <!-- ===== 記録タブ ===== -->
+  <section id="tab-input" class="tab-panel" hidden>
+    <form id="record-form" class="card" autocomplete="off">
+      <h2 id="form-title">今日の記録</h2>
+      <div class="form-row two">
+        <label>日付
+          <input type="date" id="f-date" required>
+        </label>
+        <label>時刻
+          <input type="time" id="f-time" required>
+        </label>
+      </div>
+      <div class="form-row">
+        <label>体重 (kg)
+          <input type="number" id="f-weight" inputmode="decimal" step="0.1" min="10" max="300" placeholder="例: 65.2">
+        </label>
+      </div>
+      <fieldset class="bp-fieldset">
+        <legend>血圧・脈拍 — 2回測って平均を記録します</legend>
+        <div class="form-row three">
+          <label>1回目 収縮期
+            <input type="number" id="f-sys1" inputmode="numeric" step="1" min="50" max="300" placeholder="130">
+          </label>
+          <label>1回目 拡張期
+            <input type="number" id="f-dia1" inputmode="numeric" step="1" min="30" max="200" placeholder="85">
+          </label>
+          <label>1回目 脈拍
+            <input type="number" id="f-pulse1" inputmode="numeric" step="1" min="30" max="220" placeholder="68">
+          </label>
+        </div>
+        <div class="form-row three">
+          <label>2回目 収縮期
+            <input type="number" id="f-sys2" inputmode="numeric" step="1" min="50" max="300" placeholder="126">
+          </label>
+          <label>2回目 拡張期
+            <input type="number" id="f-dia2" inputmode="numeric" step="1" min="30" max="200" placeholder="83">
+          </label>
+          <label>2回目 脈拍
+            <input type="number" id="f-pulse2" inputmode="numeric" step="1" min="30" max="220" placeholder="66">
+          </label>
+        </div>
+        <p class="bp-average" id="bp-average" hidden>平均: <strong id="bp-average-val"></strong></p>
+      </fieldset>
+      <div class="form-row">
+        <label>メモ
+          <input type="text" id="f-note" maxlength="100" placeholder="任意(例: 起床後、夕食前)">
+        </label>
+      </div>
+      <p id="form-error" class="form-error" role="alert" hidden></p>
+      <div class="form-actions">
+        <button type="submit" class="btn primary" id="save-btn">保存する</button>
+        <button type="button" class="btn ghost" id="cancel-edit-btn" hidden>編集をやめる</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- ===== グラフタブ ===== -->
+  <section id="tab-chart" class="tab-panel" hidden>
+    <div class="filter-row" role="group" aria-label="表示期間">
+      <button class="range-btn" data-days="7">7日</button>
+      <button class="range-btn" data-days="30">30日</button>
+      <button class="range-btn" data-days="90">90日</button>
+      <button class="range-btn" data-days="0">全期間</button>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat-tile">
+        <div class="stat-label">最新の体重</div>
+        <div class="stat-value" id="stat-weight">–</div>
+        <div class="stat-delta" id="stat-weight-delta"></div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-label">最新の血圧(2回測定の平均)</div>
+        <div class="stat-value" id="stat-bp">–</div>
+        <div class="stat-delta" id="stat-bp-time"></div>
+      </div>
+    </div>
+
+    <div class="card avg-card">
+      <h2>この期間の平均</h2>
+      <div class="avg-grid">
+        <div>
+          <div class="avg-label">体重</div>
+          <div class="avg-value" id="avg-weight">–</div>
+        </div>
+        <div>
+          <div class="avg-label">血圧</div>
+          <div class="avg-value" id="avg-bp">–</div>
+        </div>
+        <div>
+          <div class="avg-label">脈拍</div>
+          <div class="avg-value" id="avg-pulse">–</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card chart-card">
+      <h2>体重の推移</h2>
+      <div class="chart-box" id="chart-weight"></div>
+    </div>
+
+    <div class="card chart-card">
+      <h2>血圧の推移</h2>
+      <div class="legend" id="bp-legend">
+        <span class="legend-item"><span class="line-key s1"></span>収縮期</span>
+        <span class="legend-item"><span class="line-key s2"></span>拡張期</span>
+      </div>
+      <div class="chart-box" id="chart-bp"></div>
+      <p class="chart-note">値は2回測定の平均。点線は家庭血圧の高血圧基準(135/85 mmHg)</p>
+    </div>
+
+    <div class="card chart-card">
+      <h2>脈拍の推移</h2>
+      <div class="chart-box" id="chart-pulse"></div>
+      <p class="chart-note">値は2回測定の平均(拍/分)</p>
+    </div>
+  </section>
+
+  <!-- ===== 履歴タブ ===== -->
+  <section id="tab-history" class="tab-panel" hidden>
+    <div class="card">
+      <h2>記録一覧</h2>
+      <p class="empty-msg" id="history-empty" hidden>まだ記録がありません。「記録」タブから追加してください。</p>
+      <div class="table-wrap">
+        <table id="history-table">
+          <thead>
+            <tr>
+              <th>日時</th><th>体重</th><th>血圧</th><th>脈拍</th><th>メモ</th><th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== データタブ ===== -->
+  <section id="tab-data" class="tab-panel" hidden>
+    <div class="card">
+      <h2>データの書き出し・読み込み</h2>
+      <p class="help-text">データはこの端末のブラウザ内にのみ保存されます。iPhoneとパソコンの間でデータを移す場合や、バックアップにはここからファイルを書き出してください。</p>
+      <div class="data-actions">
+        <button class="btn primary" id="export-csv">CSVで書き出す</button>
+        <button class="btn primary" id="export-json">JSONで書き出す(バックアップ)</button>
+        <label class="btn ghost file-btn">JSONを読み込む(復元・統合)
+          <input type="file" id="import-json" accept=".json,application/json" hidden>
+        </label>
+      </div>
+      <p id="data-msg" class="help-text" role="status"></p>
+    </div>
+    <div class="card">
+      <h2>iPhoneでの使い方</h2>
+      <ul class="help-list">
+        <li>SafariでこのページのURLを開き、共有ボタン → <strong>「ホーム画面に追加」</strong>でアプリとして使えます。</li>
+        <li>ヘルスケアアプリに体重・血圧を残したい場合は、CSVを書き出して「ショートカット」アプリで登録する方法があります(README参照)。</li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<nav class="tab-bar">
+  <button class="tab-btn" data-tab="input" aria-label="記録">
+    <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+    記録
+  </button>
+  <button class="tab-btn" data-tab="chart" aria-label="グラフ">
+    <svg viewBox="0 0 24 24"><path d="M4 19L9 12l4 3 7-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+    グラフ
+  </button>
+  <button class="tab-btn" data-tab="history" aria-label="履歴">
+    <svg viewBox="0 0 24 24"><path d="M5 6h14M5 12h14M5 18h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+    履歴
+  </button>
+  <button class="tab-btn" data-tab="data" aria-label="データ">
+    <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+    データ
+  </button>
+</nav>
+
+<script src="chart.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
