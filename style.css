@@ -237,6 +237,40 @@ main { max-width: 640px; margin: 0 auto; padding: 16px 12px; }
 .mini-btn.danger { color: var(--danger); border-color: var(--danger); }
 .empty-msg { color: var(--text-muted); font-size: 13px; }
 
+@media (max-width: 600px) {
+  .table-wrap { overflow: visible; }
+  #history-table,
+  #history-table tbody,
+  #history-table tr,
+  #history-table td { display: block; width: 100%; }
+  #history-table thead { display: none; }
+  #history-table tr {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--baseline);
+  }
+  #history-table td {
+    display: grid;
+    grid-template-columns: 88px minmax(0, 1fr);
+    gap: 8px;
+    padding: 5px 0;
+    border: 0;
+    white-space: normal;
+  }
+  #history-table td::before {
+    content: attr(data-label);
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 600;
+  }
+  #history-table td:last-child { margin-top: 4px; }
+  .row-actions { gap: 8px; }
+  .mini-btn {
+    min-height: 40px;
+    padding: 8px 16px;
+    font-size: 14px;
+  }
+}
+
 /* ===== データタブ ===== */
 .help-text { font-size: 13px; color: var(--text-secondary); margin-bottom: 12px; }
 .data-actions { display: flex; flex-direction: column; gap: 8px; }

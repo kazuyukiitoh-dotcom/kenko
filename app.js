@@ -320,10 +320,13 @@
       const tr = document.createElement("tr");
 
       const tdDate = document.createElement("td");
+      tdDate.dataset.label = "日時";
       tdDate.textContent = r.date.slice(5).replace("-", "/") + " " + (r.time || "");
       const tdW = document.createElement("td");
+      tdW.dataset.label = "体重";
       tdW.textContent = r.weight != null ? r.weight.toFixed(1) + " kg" : "–";
       const tdBP = document.createElement("td");
+      tdBP.dataset.label = "血圧平均";
       if (r.sys != null) {
         tdBP.textContent = r.sys + "/" + r.dia;
         if (r.sys2 != null) {
@@ -336,6 +339,7 @@
         tdBP.textContent = "–";
       }
       const tdP = document.createElement("td");
+      tdP.dataset.label = "脈拍平均";
       if (r.pulse != null) {
         tdP.textContent = String(r.pulse);
         if (r.pulse2 != null && r.pulse1 != null) {
@@ -348,15 +352,17 @@
         tdP.textContent = "–";
       }
       const tdN = document.createElement("td");
+      tdN.dataset.label = "メモ";
       tdN.className = "note-cell";
       tdN.textContent = r.note || "";
 
       const tdA = document.createElement("td");
+      tdA.dataset.label = "操作";
       const actions = document.createElement("div");
       actions.className = "row-actions";
       const editBtn = document.createElement("button");
       editBtn.className = "mini-btn";
-      editBtn.textContent = "編集";
+      editBtn.textContent = "修正";
       editBtn.addEventListener("click", () => startEdit(r.id));
       const delBtn = document.createElement("button");
       delBtn.className = "mini-btn danger";
