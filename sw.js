@@ -1,5 +1,5 @@
 /* オフライン対応 Service Worker */
-const CACHE_NAME = "health-note-v2";
+const CACHE_NAME = "health-note-v3";
 const ASSETS = [
   "./",
   "./index.html",

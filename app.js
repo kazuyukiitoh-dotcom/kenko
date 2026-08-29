@@ -19,6 +19,26 @@
     localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
   }
 
+  function createRecordId() {
+    return typeof crypto !== "undefined" && crypto.randomUUID
+      ? crypto.randomUUID()
+      : Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+  }
+
+  // 旧データや取込データでも、編集対象を必ず一意に特定できるようにする。
+  function ensureRecordIds(items) {
+    const seen = new Set();
+    let changed = false;
+    for (const item of items) {
+      if (!item.id || seen.has(item.id)) {
+        item.id = createRecordId();
+        changed = true;
+      }
+      seen.add(item.id);
+    }
+    return changed;
+  }
+
   function recordTime(r) {
     return new Date(r.date + "T" + (r.time || "00:00")).getTime();
   }
@@ -28,6 +48,7 @@
   }
 
   let records = loadRecords();
+  if (ensureRecordIds(records)) saveRecords(records);
   let editingId = null;
   let rangeDays = 30;
 
@@ -69,6 +90,73 @@
   const formTitle = document.getElementById("form-title");
   const saveBtn = document.getElementById("save-btn");
   const cancelEditBtn = document.getElementById("cancel-edit-btn");
+  const confirmDialog = document.getElementById("confirm-dialog");
+  const confirmTitle = document.getElementById("confirm-title");
+  const confirmMessage = document.getElementById("confirm-message");
+  const confirmDetails = document.getElementById("confirm-details");
+  const confirmAccept = document.getElementById("confirm-accept");
+
+  const displayFields = [
+    ["日付", r => r.date || "–"],
+    ["時刻", r => r.time || "–"],
+    ["体重", r => r.weight != null ? r.weight.toFixed(1) + " kg" : "–"],
+    ["1回目の血圧", r => r.sys1 != null ? r.sys1 + "/" + r.dia1 + " mmHg" : "–"],
+    ["2回目の血圧", r => r.sys2 != null ? r.sys2 + "/" + r.dia2 + " mmHg" : "–"],
+    ["血圧平均", r => r.sys != null ? r.sys + "/" + r.dia + " mmHg" : "–"],
+    ["1回目の脈拍", r => r.pulse1 != null ? r.pulse1 + " 拍/分" : "–"],
+    ["2回目の脈拍", r => r.pulse2 != null ? r.pulse2 + " 拍/分" : "–"],
+    ["脈拍平均", r => r.pulse != null ? r.pulse + " 拍/分" : "–"],
+    ["メモ", r => r.note || "–"],
+  ];
+
+  function addConfirmRow(label, oldValue, newValue, danger) {
+    const row = document.createElement("div");
+    row.className = "change-row" + (danger ? " danger" : "");
+    const name = document.createElement("span");
+    name.className = "change-label";
+    name.textContent = label;
+    const values = document.createElement("div");
+    values.className = "change-values";
+    const oldText = document.createElement("span");
+    oldText.className = "change-old";
+    oldText.textContent = oldValue;
+    const arrow = document.createElement("span");
+    arrow.textContent = "→";
+    const newText = document.createElement("span");
+    newText.className = "change-new";
+    newText.textContent = newValue;
+    values.append(oldText, arrow, newText);
+    row.append(name, values);
+    confirmDetails.appendChild(row);
+  }
+
+  function askConfirmation({ title, message, acceptLabel, oldRecord, newRecord, danger = false }) {
+    confirmTitle.textContent = title;
+    confirmMessage.textContent = message;
+    confirmAccept.textContent = acceptLabel;
+    confirmDialog.classList.toggle("delete-mode", danger);
+    confirmDetails.textContent = "";
+
+    let count = 0;
+    for (const [label, format] of displayFields) {
+      const oldValue = format(oldRecord);
+      const newValue = newRecord ? format(newRecord) : "削除";
+      if (danger || oldValue !== newValue) {
+        addConfirmRow(label, oldValue, newValue, danger);
+        count++;
+      }
+    }
+    if (!count) return Promise.resolve(false);
+
+    if (typeof confirmDialog.showModal !== "function") {
+      return Promise.resolve(window.confirm(message));
+    }
+    return new Promise(resolve => {
+      const onClose = () => resolve(confirmDialog.returnValue === "confirm");
+      confirmDialog.addEventListener("close", onClose, { once: true });
+      confirmDialog.showModal();
+    });
+  }
 
   function resetForm() {
     editingId = null;
@@ -130,7 +218,7 @@
   }
   [fSys1, fDia1, fSys2, fDia2, fPulse1, fPulse2].forEach(f => f.addEventListener("input", updateAveragePreview));
 
-  form.addEventListener("submit", ev => {
+  form.addEventListener("submit", async ev => {
     ev.preventDefault();
     formError.hidden = true;
 
@@ -147,7 +235,7 @@
     }
 
     const rec = {
-      id: editingId || (Date.now().toString(36) + Math.random().toString(36).slice(2, 8)),
+      id: editingId || createRecordId(),
       date: fDate.value,
       time: fTime.value,
       weight,
@@ -165,7 +253,29 @@
 
     if (editingId) {
       const idx = records.findIndex(r => r.id === editingId);
-      if (idx >= 0) records[idx] = rec; else records.push(rec);
+      if (idx < 0) {
+        showError("修正対象の記録が見つかりません。履歴から選び直してください。");
+        return;
+      }
+      const hasChanges = displayFields.some(([, format]) => format(records[idx]) !== format(rec));
+      if (!hasChanges) {
+        showError("変更された項目はありません。");
+        return;
+      }
+      const approved = await askConfirmation({
+        title: "変更内容の確認",
+        message: "強調表示された項目だけが変更されます。対象と内容を確認してください。",
+        acceptLabel: "この内容で変更",
+        oldRecord: records[idx],
+        newRecord: rec,
+      });
+      if (!approved) return;
+      const currentIdx = records.findIndex(r => r.id === editingId);
+      if (currentIdx < 0) {
+        showError("修正対象の記録が見つかりません。履歴から選び直してください。");
+        return;
+      }
+      records[currentIdx] = rec;
     } else {
       records.push(rec);
     }
@@ -192,7 +302,7 @@
     fPulse2.value = r.pulse2 ?? "";
     updateAveragePreview();
     fNote.value = r.note || "";
-    formTitle.textContent = "記録を編集";
+    formTitle.textContent = "記録を編集: " + r.date + " " + (r.time || "");
     saveBtn.textContent = "更新する";
     cancelEditBtn.hidden = false;
     switchTab("input");
@@ -367,12 +477,23 @@
       const delBtn = document.createElement("button");
       delBtn.className = "mini-btn danger";
       delBtn.textContent = "削除";
-      delBtn.addEventListener("click", () => {
-        if (confirm(r.date + " " + (r.time || "") + " の記録を削除しますか?")) {
-          records = records.filter(x => x.id !== r.id);
-          saveRecords(records);
-          renderHistory();
-        }
+      delBtn.addEventListener("click", async () => {
+        const target = records.find(x => x.id === r.id);
+        if (!target) return;
+        const approved = await askConfirmation({
+          title: "削除する記録の確認",
+          message: "赤く表示された記録を削除します。この操作は元に戻せません。",
+          acceptLabel: "この記録を削除",
+          oldRecord: target,
+          newRecord: null,
+          danger: true,
+        });
+        if (!approved) return;
+        const currentIdx = records.findIndex(x => x.id === r.id);
+        if (currentIdx < 0) return;
+        records.splice(currentIdx, 1);
+        saveRecords(records);
+        renderHistory();
       });
       actions.append(editBtn, delBtn);
       tdA.appendChild(actions);
@@ -433,9 +554,10 @@
         const data = JSON.parse(reader.result);
         const incoming = Array.isArray(data) ? data : data.records;
         if (!Array.isArray(incoming)) throw new Error("形式が違います");
+        ensureRecordIds(incoming.filter(r => r && r.date));
         let added = 0, updated = 0;
         for (const r of incoming) {
-          if (!r || !r.id || !r.date) continue;
+          if (!r || !r.date) continue;
           const idx = records.findIndex(x => x.id === r.id);
           if (idx >= 0) { records[idx] = r; updated++; }
           else { records.push(r); added++; }
