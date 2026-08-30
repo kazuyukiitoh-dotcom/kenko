@@ -108,6 +108,49 @@
     fTime.value = String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0");
   }
 
+  // モバイルで連続入力しやすいよう、確定した数値から次の欄へ進める。
+  const inputOrder = [
+    fDate, fTime, fWeight,
+    fSys1, fDia1, fPulse1,
+    fSys2, fDia2, fPulse2,
+    fNote, saveBtn,
+  ];
+  const autoAdvanceFields = [fSys1, fDia1, fPulse1, fSys2, fDia2, fPulse2];
+  const advanceTimers = new WeakMap();
+
+  function focusNextField(field) {
+    const index = inputOrder.indexOf(field);
+    const next = inputOrder[index + 1];
+    if (next && !next.disabled) next.focus();
+  }
+
+  inputOrder.slice(0, -1).forEach(field => {
+    field.addEventListener("keydown", ev => {
+      if (ev.key !== "Enter") return;
+      ev.preventDefault();
+      const timer = advanceTimers.get(field);
+      if (timer) clearTimeout(timer);
+      focusNextField(field);
+    });
+  });
+
+  autoAdvanceFields.forEach(field => {
+    field.addEventListener("input", () => {
+      const oldTimer = advanceTimers.get(field);
+      if (oldTimer) clearTimeout(oldTimer);
+      if (!field.validity.valid || field.value.trim().length < 2) return;
+
+      const timer = setTimeout(() => {
+        if (document.activeElement === field && field.validity.valid) focusNextField(field);
+      }, 650);
+      advanceTimers.set(field, timer);
+    });
+    field.addEventListener("blur", () => {
+      const timer = advanceTimers.get(field);
+      if (timer) clearTimeout(timer);
+    });
+  });
+
   const displayFields = [
     ["日付", r => r.date || "–"],
     ["時刻", r => r.time || "–"],
@@ -171,6 +214,10 @@
   }
 
   function resetForm() {
+    autoAdvanceFields.forEach(field => {
+      const timer = advanceTimers.get(field);
+      if (timer) clearTimeout(timer);
+    });
     editingId = null;
     form.reset();
     setCurrentDateTime();
