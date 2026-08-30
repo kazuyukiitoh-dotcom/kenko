@@ -116,7 +116,6 @@
     fNote, saveBtn,
   ];
   const autoAdvanceFields = [fSys1, fDia1, fPulse1, fSys2, fDia2, fPulse2];
-  const advanceTimers = new WeakMap();
 
   function focusNextField(field) {
     const index = inputOrder.indexOf(field);
@@ -128,26 +127,15 @@
     field.addEventListener("keydown", ev => {
       if (ev.key !== "Enter") return;
       ev.preventDefault();
-      const timer = advanceTimers.get(field);
-      if (timer) clearTimeout(timer);
       focusNextField(field);
     });
   });
 
   autoAdvanceFields.forEach(field => {
     field.addEventListener("input", () => {
-      const oldTimer = advanceTimers.get(field);
-      if (oldTimer) clearTimeout(oldTimer);
       if (!field.validity.valid || field.value.trim().length < 2) return;
-
-      const timer = setTimeout(() => {
-        if (document.activeElement === field && field.validity.valid) focusNextField(field);
-      }, 650);
-      advanceTimers.set(field, timer);
-    });
-    field.addEventListener("blur", () => {
-      const timer = advanceTimers.get(field);
-      if (timer) clearTimeout(timer);
+      // iOSではタイマー後のfocusが拒否されるため、入力イベント内で同期的に移動する。
+      focusNextField(field);
     });
   });
 
@@ -214,10 +202,6 @@
   }
 
   function resetForm() {
-    autoAdvanceFields.forEach(field => {
-      const timer = advanceTimers.get(field);
-      if (timer) clearTimeout(timer);
-    });
     editingId = null;
     form.reset();
     setCurrentDateTime();

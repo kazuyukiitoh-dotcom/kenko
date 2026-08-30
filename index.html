@@ -29,46 +29,46 @@
       <h2 id="form-title">今日の記録</h2>
       <div class="form-row two">
         <label>日付
-          <input type="date" id="f-date" required>
+          <input type="date" id="f-date" enterkeyhint="next" required>
         </label>
         <label>時刻
-          <input type="time" id="f-time" required>
+          <input type="time" id="f-time" enterkeyhint="next" required>
         </label>
       </div>
       <div class="form-row">
         <label>体重 (kg)
-          <input type="number" id="f-weight" inputmode="decimal" step="0.1" min="10" max="300" placeholder="例: 65.2">
+          <input type="number" id="f-weight" inputmode="decimal" enterkeyhint="next" step="0.1" min="10" max="300" placeholder="例: 65.2">
         </label>
       </div>
       <fieldset class="bp-fieldset">
         <legend>血圧・脈拍 — 2回測って平均を記録します</legend>
         <div class="form-row three">
           <label>1回目 収縮期
-            <input type="number" id="f-sys1" inputmode="numeric" step="1" min="50" max="300" placeholder="130">
+            <input type="number" id="f-sys1" inputmode="numeric" enterkeyhint="next" step="1" min="50" max="300" placeholder="130">
           </label>
           <label>1回目 拡張期
-            <input type="number" id="f-dia1" inputmode="numeric" step="1" min="30" max="200" placeholder="85">
+            <input type="number" id="f-dia1" inputmode="numeric" enterkeyhint="next" step="1" min="30" max="200" placeholder="85">
           </label>
           <label>1回目 脈拍
-            <input type="number" id="f-pulse1" inputmode="numeric" step="1" min="30" max="220" placeholder="68">
+            <input type="number" id="f-pulse1" inputmode="numeric" enterkeyhint="next" step="1" min="30" max="220" placeholder="68">
           </label>
         </div>
         <div class="form-row three">
           <label>2回目 収縮期
-            <input type="number" id="f-sys2" inputmode="numeric" step="1" min="50" max="300" placeholder="126">
+            <input type="number" id="f-sys2" inputmode="numeric" enterkeyhint="next" step="1" min="50" max="300" placeholder="126">
           </label>
           <label>2回目 拡張期
-            <input type="number" id="f-dia2" inputmode="numeric" step="1" min="30" max="200" placeholder="83">
+            <input type="number" id="f-dia2" inputmode="numeric" enterkeyhint="next" step="1" min="30" max="200" placeholder="83">
           </label>
           <label>2回目 脈拍
-            <input type="number" id="f-pulse2" inputmode="numeric" step="1" min="30" max="220" placeholder="66">
+            <input type="number" id="f-pulse2" inputmode="numeric" enterkeyhint="next" step="1" min="30" max="220" placeholder="66">
           </label>
         </div>
         <p class="bp-average" id="bp-average" hidden>平均: <strong id="bp-average-val"></strong></p>
       </fieldset>
       <div class="form-row">
         <label>メモ
-          <input type="text" id="f-note" maxlength="100" placeholder="任意(例: 起床後、夕食前)">
+          <input type="text" id="f-note" enterkeyhint="done" maxlength="100" placeholder="任意(例: 起床後、夕食前)">
         </label>
       </div>
       <p id="form-error" class="form-error" role="alert" hidden></p>
