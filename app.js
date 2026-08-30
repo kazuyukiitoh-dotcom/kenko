@@ -95,6 +95,18 @@
   const confirmMessage = document.getElementById("confirm-message");
   const confirmDetails = document.getElementById("confirm-details");
   const confirmAccept = document.getElementById("confirm-accept");
+  function localDateValue(date = new Date()) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return year + "-" + month + "-" + day;
+  }
+
+  function setCurrentDateTime() {
+    const now = new Date();
+    fDate.value = localDateValue(now);
+    fTime.value = String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0");
+  }
 
   const displayFields = [
     ["日付", r => r.date || "–"],
@@ -161,9 +173,7 @@
   function resetForm() {
     editingId = null;
     form.reset();
-    const now = new Date();
-    fDate.value = now.toISOString().slice(0, 10);
-    fTime.value = String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0");
+    setCurrentDateTime();
     formTitle.textContent = "今日の記録";
     saveBtn.textContent = "保存する";
     cancelEditBtn.hidden = true;
@@ -515,7 +525,7 @@
   }
 
   function today() {
-    return new Date().toISOString().slice(0, 10);
+    return localDateValue();
   }
 
   const dataMsg = document.getElementById("data-msg");
